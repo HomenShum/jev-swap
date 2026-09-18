@@ -6,8 +6,8 @@
 
 Enforces SKILL.md gates 1 (complete map), 2 (Jev only owns decisions), 5 (three arms
 wired, both comparison modes present), 7 (protected files unchanged) and 8 (evidence
-before status), and refuses a card still carrying the template's illustrative numbers.
-Stdlib only.
+before status), and refuses a map or card still carrying the template's illustrative
+marker or REPLACE_ME residue. Stdlib only.
 """
 import json
 import sys
@@ -22,6 +22,8 @@ VERSION_KEYS = ("candidate_sha", "jev_model", "threshold_policy_version", "datas
 
 def check_map(m):
     f = []
+    if "REPLACE_ME" in json.dumps(m):
+        f.append("map: template residue (REPLACE_ME) present; the planner must fill the map")
     for key in ("component", "claim", "commit_boundary", "fields"):
         if not m.get(key):
             f.append(f"map: missing {key}")
@@ -52,14 +54,16 @@ def check_card(c):
     f = []
     if "_illustrative" in c:
         f.append("card: still carries the template's illustrative numbers; the runner must write this file")
+    if "REPLACE_ME" in json.dumps(c):
+        f.append("card: template residue (REPLACE_ME) present; the runner must write this file")
     arms = c.get("arms") or {}
     for a in ("A", "B", "C"):
         if a not in arms:
             f.append(f"card: arm {a} missing")
     if any("missing" in x for x in f):
         return f
-    ive = c.get("isolated_vs_end_to_end") or {}
-    if "isolated_agreement_B" not in ive or "end_to_end_agreement_C" not in ive:
+    ive = c.get("isolated_vs_end_to_end")
+    if not isinstance(ive, dict) or "isolated_agreement_B" not in ive or "end_to_end_agreement_C" not in ive:
         f.append("card: isolated_vs_end_to_end must carry both isolated_agreement_B and end_to_end_agreement_C")
     A, B, C = arms["A"], arms["B"], arms["C"]
     if A.get("jev_calls", 0) != 0:
@@ -98,7 +102,7 @@ def check_card(c):
         f.append(f"card: status must be one of {sorted(STATUSES)}")
     if c.get("status") in ("QUALIFIED_CANDIDATE", "PROMOTED"):
         for k in VERSION_KEYS:
-            if not c.get(k) or "REPLACE" in str(c[k]):
+            if not c.get(k):
                 f.append(f"card: status {c['status']} requires {k}")
     if c.get("status") == "PROMOTED":
         rb = c.get("readback") or {}
@@ -122,8 +126,12 @@ def main(argv):
         print(__doc__)
         return 2
     d = Path(argv[0])
-    m = json.loads((d / "responsibility-map.json").read_text(encoding="utf-8"))
-    c = json.loads((d / "eval-card.json").read_text(encoding="utf-8"))
+    try:
+        m = json.loads((d / "responsibility-map.json").read_text(encoding="utf-8"))
+        c = json.loads((d / "eval-card.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"GATE FAIL\n  - cannot read the packet in {d}: {e}")
+        return 1
     failures = run(m, c)
     print("GATE " + ("PASS" if not failures else "FAIL"))
     for x in failures:
@@ -137,6 +145,9 @@ def self_test():
     c = json.loads((here / "eval-card.json").read_text(encoding="utf-8"))
     assert "_illustrative" in c, "template must carry the _illustrative marker"
     c.pop("_illustrative")
+    # the templates are deliberately unfillable as-is; scrub the residue to build the one good packet
+    m = json.loads(json.dumps(m).replace("REPLACE_ME", "0000000"))
+    c = json.loads(json.dumps(c).replace("REPLACE_ME", "0000000"))
     c["graders_sha_at_plan"] = c["graders_sha_at_eval"] = "abc"
     assert run(m, c) == [], run(m, c)
 
@@ -161,14 +172,17 @@ def self_test():
     expect(lambda mm, cc: cc["arms"]["C"].update(downstream_field_integrity=0.98), "integrity below 1.0")
     expect(lambda mm, cc: cc.update(graders_sha_at_eval="zzz"), "weakened check")
     expect(lambda mm, cc: cc.update(run_ids=[]), "stale or unobserved")
-    expect(lambda mm, cc: cc.update(status="QUALIFIED_CANDIDATE"), "requires candidate_sha")
+    expect(lambda mm, cc: cc.update(status="QUALIFIED_CANDIDATE", candidate_sha=""), "requires candidate_sha")
+    expect(lambda mm, cc: cc.update(candidate_sha="REPLACE_ME"), "card: template residue")
+    expect(lambda mm, cc: mm["case_set"].update(snapshot="sha256:REPLACE_ME"), "map: template residue")
+    expect(lambda mm, cc: cc.update(isolated_vs_end_to_end=5), "both isolated_agreement_B and end_to_end_agreement_C")
     expect(lambda mm, cc: cc.update(status="PROMOTED", candidate_sha="s1", dataset_snapshot="d", readback={"deployed_sha": "s2", "observed_at": "t"}), "PROMOTED requires readback")
     expect(lambda mm, cc: (cc["arms"]["B"].update(jev_calls=0), cc.update(verdict="KEEP")), "contradicts the evidence")
     expect(lambda mm, cc: cc.update(_illustrative="x"), "illustrative numbers")
     expect(lambda mm, cc: cc.pop("isolated_vs_end_to_end"), "both isolated_agreement_B and end_to_end_agreement_C")
     small = mutated(lambda mm, cc: (cc.update(n_available=12, all_available_used=True), [a.update(n=12, critical_errors=0) for a in cc["arms"].values()]))
     assert small == [], small
-    print("self-test OK: 1 good packet passes, 17 mutations fail for the stated reason, thin-but-complete set accepted")
+    print("self-test OK: 1 good packet passes, 20 mutations fail for the stated reason, thin-but-complete set accepted")
     return 0
 
 

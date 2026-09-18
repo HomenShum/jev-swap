@@ -74,7 +74,8 @@ Stdlib only. Fails the packet when a field is owned by Jev but is arithmetic, a 
 exact string, or generated text; when any field has no evidence; when a planted control is
 missing; when arm B or C made zero Jev calls; when arm A made any; when the critical-error
 rate is above the ceiling or above the baseline; when the fallback rate is at the ceiling;
-when graders changed between plan and eval; when a status claims versions it does not carry;
+when graders changed between plan and eval; when the map or card still carries the template's
+illustrative marker or `REPLACE_ME` residue; when a status claims versions it does not carry;
 when PROMOTED has no readback. A verdict of KEEP over failing evidence is itself a failure.
 
 ## Install
@@ -117,10 +118,11 @@ scripts/gate.py               the mechanical gate
 ## Provenance
 
 Designed 2026-09-18 from three ChatGPT design threads on TypeSafe Jev adoption and
-planner-worker-judge campaigns, and from docs.typesafe.ai as read that day (API reference,
-models, primitives, confidence, SDKs, fan-out pattern, and the jev-1.13 jaggedness page).
-The failure-mode table in `reference/JEV-CONTRACT.md` is TypeSafe's own; re-verify before
-quoting it onward.
+planner-worker-judge campaigns, from docs.typesafe.ai as read that day (API reference,
+models, primitives, confidence, SDKs, fan-out pattern, and the jev-1.13 jaggedness page),
+and from the browser-use `jev-ultrafast` README (github.com/browser-use/jev-ultrafast) for
+the one non-TypeSafe example in the contract file. The failure-mode table in
+`reference/JEV-CONTRACT.md` is TypeSafe's own; re-verify before quoting it onward.
 
 ## License
 
