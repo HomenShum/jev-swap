@@ -1,0 +1,94 @@
+{
+  "component": "src/citations/support.ts:checkSupport",
+  "claim": "checkSupport turns a (claim, source section) pair into a support label so that the review UI can mark the citation verified, contradicted, or unsupported.",
+  "not_its_job": ["locating the quote", "computing offsets", "writing the explanation", "committing the review row"],
+  "class": "verifier",
+  "primitive": "choice",
+  "callers": ["src/review/pipeline.ts:142", "src/jobs/recheck.ts:58"],
+  "live_entrypoint": "pnpm review:run --case <id>",
+  "data_release_scope": {
+    "state_may_leave_for_new_provider": true,
+    "approved_by": "owner@example.com, 2026-09-18",
+    "notes": "claim + section text only; no tenant identifiers in state"
+  },
+  "commit_boundary": "src/review/pipeline.ts:171 (db.citations.update)",
+  "existing_safeguards": ["10 s timeout on the LLM call", "one retry on parse failure", "no circuit breaker"],
+  "baselines": {
+    "source": "langfuse traces 2026-09-01..2026-09-15, n=1840",
+    "agreement_with_labels": 0.91,
+    "critical_error_rate": 0.031,
+    "latency_p50_ms": 1900,
+    "latency_p95_ms": 4600,
+    "cost_per_call_usd": 0.0042
+  },
+  "fields": [
+    {
+      "name": "label",
+      "type": "enum: supported | contradicted | unsupported | fabricated",
+      "kind": "decision",
+      "producer_now": "llm",
+      "producer_after": "jev",
+      "consumers": ["src/review/pipeline.ts:150", "src/ui/CitationBadge.tsx:22"],
+      "invariant": "fabricated only when the quote is absent from the source; never decided by a model",
+      "evidence": "tests/citations/support.test.ts:41"
+    },
+    {
+      "name": "quote",
+      "type": "string",
+      "kind": "exact_string",
+      "producer_now": "llm",
+      "producer_after": "code",
+      "consumers": ["src/ui/CitationBadge.tsx:30"],
+      "invariant": "quote is a verbatim substring of the source section",
+      "evidence": "tests/citations/locate.test.ts:12"
+    },
+    {
+      "name": "offsets",
+      "type": "[number, number]",
+      "kind": "arithmetic",
+      "producer_now": "llm",
+      "producer_after": "code",
+      "consumers": ["src/ui/CitationBadge.tsx:31"],
+      "invariant": "source.slice(offsets[0], offsets[1]) === quote",
+      "evidence": "tests/citations/locate.test.ts:20"
+    },
+    {
+      "name": "explanation",
+      "type": "string",
+      "kind": "generation",
+      "producer_now": "llm",
+      "producer_after": "original",
+      "consumers": ["src/ui/CitationBadge.tsx:35"],
+      "invariant": "non-empty when label != supported",
+      "evidence": "tests/citations/support.test.ts:60"
+    },
+    {
+      "name": "confidence",
+      "type": "number 0..1",
+      "kind": "decision",
+      "producer_now": "llm (self-reported)",
+      "producer_after": "jev",
+      "consumers": ["src/review/pipeline.ts:158 (routes < 0.7 to human queue)"],
+      "invariant": "raw probabilities retained beside it; threshold read from policy version, not hardcoded",
+      "evidence": "tests/citations/routing.test.ts:9"
+    }
+  ],
+  "side_effects": [
+    { "what": "cache write", "where": "src/citations/cache.ts:14", "key_includes": ["claim hash", "section hash", "model id"] },
+    { "what": "db update", "where": "src/review/pipeline.ts:171", "after_boundary": true },
+    { "what": "event citation.checked", "where": "src/review/pipeline.ts:176" }
+  ],
+  "case_set": {
+    "snapshot": "sha256:REPLACE_ME",
+    "n": 120,
+    "slices": ["pdf", "html", "long_section"],
+    "labels_source": "answer keys v3, 2026-09-10; 7 unresolved keys routed to triage",
+    "planted_controls": {
+      "confident_wrong": "case_c01",
+      "out_of_set": "case_c02",
+      "adversarial_state": "case_c03",
+      "large_noisy_state": "case_c04",
+      "provider_failure_injection": "case_c05"
+    }
+  }
+}
