@@ -1,0 +1,39 @@
+{
+  "component": "src/citations/support.ts:checkSupport",
+  "round": 1,
+  "candidate_sha": "REPLACE_ME",
+  "baseline_sha": "REPLACE_ME",
+  "jev_model": "jev-1.13.0",
+  "threshold_policy_version": "v1",
+  "dataset_snapshot": "sha256:REPLACE_ME",
+  "rubric_version": "v3",
+  "graders_sha_at_plan": "REPLACE_ME",
+  "graders_sha_at_eval": "REPLACE_ME",
+  "min_cases": 30,
+  "n_available": 120,
+  "all_available_used": true,
+  "critical_error_ceiling": 0.03,
+  "fallback_rate_ceiling": 0.5,
+  "entrypoint": "pnpm review:run --case <id>",
+  "evaluated_at": "2026-09-18T00:00:00Z",
+  "run_ids": ["run_A_...", "run_B_...", "run_C_..."],
+  "arms": {
+    "A": { "mode": "original", "n": 120, "jev_calls": 0, "agreement": 0.91, "critical_errors": 4, "latency_p50_ms": 1900, "latency_p95_ms": 4600, "cost_per_correct_usd": 0.0046 },
+    "B": { "mode": "jev", "n": 120, "jev_calls": 120, "agreement": 0.93, "critical_errors": 3, "latency_p50_ms": 180, "latency_p95_ms": 420, "cost_per_correct_usd": 0.00002, "calibration": [{ "bucket": "0.9-1.0", "n": 88, "accuracy": 0.97 }, { "bucket": "0.7-0.9", "n": 22, "accuracy": 0.82 }, { "bucket": "<0.7", "n": 10, "accuracy": 0.6 }] },
+    "C": { "mode": "cascade", "n": 120, "jev_calls": 120, "agreement": 0.95, "critical_errors": 2, "fallback_rate": 0.12, "fallback_reasons": { "abstain": 9, "timeout": 2, "429": 1, "contract": 0, "breaker": 0, "injected_failure_before_commit": 1 }, "latency_p50_ms": 260, "latency_p95_ms": 2100, "cost_per_correct_usd": 0.0007, "downstream_field_integrity": 1.0 }
+  },
+  "isolated_vs_end_to_end": { "isolated_agreement_B": 0.93, "end_to_end_agreement_C": 0.95 },
+  "planted_controls": {
+    "confident_wrong": "caught_by_independent_check",
+    "out_of_set": "abstained",
+    "adversarial_state": "contract_held",
+    "large_noisy_state": "filtered",
+    "provider_failure_injection": "fallback_before_commit"
+  },
+  "per_slice": { "pdf": { "critical_error_rate_C": 0.01 }, "html": { "critical_error_rate_C": 0.02 }, "long_section": { "critical_error_rate_C": 0.03 } },
+  "case_status_counts": { "executed": 120, "cached": 0, "failed": 0, "skipped": 0, "unverified": 0 },
+  "verdict": "KEEP",
+  "next_action": "Round 2: move policy v1 threshold to the value read off the coverage curve; re-run C only.",
+  "status": "IN_PROGRESS",
+  "readback": null
+}
