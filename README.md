@@ -110,8 +110,9 @@ scripts/gate.py               the mechanical gate
   answers. A generic wrapper would be copied blindly; a checked plan cannot be.
 - No use-case catalog. Whether a component should be swapped is decided by its map, not by a
   list.
-- No claims about Jev's accuracy on your data. The skill exists because that number has to be
-  measured, three arms, live.
+- No claims about Jev's accuracy on your data, and no measurements of Jev at all: no live Jev
+  call was made while building this skill. The skill exists because that number has to be
+  measured in your pipeline, three arms, live.
 
 ## Provenance
 

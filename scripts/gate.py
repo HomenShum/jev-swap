@@ -4,8 +4,10 @@
     python scripts/gate.py swap/<component>     # reads responsibility-map.json + eval-card.json
     python scripts/gate.py --self-test          # fixtures in memory, no files
 
-Enforces SKILL.md gates 1 (complete map), 2 (Jev only owns decisions), 5 (three arms,
-wired), 7 (protected files unchanged) and 8 (evidence before status). Stdlib only.
+Enforces SKILL.md gates 1 (complete map), 2 (Jev only owns decisions), 5 (three arms
+wired, both comparison modes present), 7 (protected files unchanged) and 8 (evidence
+before status), and refuses a card still carrying the template's illustrative numbers.
+Stdlib only.
 """
 import json
 import sys
@@ -48,12 +50,17 @@ def check_map(m):
 
 def check_card(c):
     f = []
+    if "_illustrative" in c:
+        f.append("card: still carries the template's illustrative numbers; the runner must write this file")
     arms = c.get("arms") or {}
     for a in ("A", "B", "C"):
         if a not in arms:
             f.append(f"card: arm {a} missing")
-    if f:
+    if any("missing" in x for x in f):
         return f
+    ive = c.get("isolated_vs_end_to_end") or {}
+    if "isolated_agreement_B" not in ive or "end_to_end_agreement_C" not in ive:
+        f.append("card: isolated_vs_end_to_end must carry both isolated_agreement_B and end_to_end_agreement_C")
     A, B, C = arms["A"], arms["B"], arms["C"]
     if A.get("jev_calls", 0) != 0:
         f.append("card: arm A made Jev calls (contaminated baseline)")
@@ -128,6 +135,8 @@ def self_test():
     here = Path(__file__).resolve().parent.parent / "templates"
     m = json.loads((here / "responsibility-map.json").read_text(encoding="utf-8"))
     c = json.loads((here / "eval-card.json").read_text(encoding="utf-8"))
+    assert "_illustrative" in c, "template must carry the _illustrative marker"
+    c.pop("_illustrative")
     c["graders_sha_at_plan"] = c["graders_sha_at_eval"] = "abc"
     assert run(m, c) == [], run(m, c)
 
@@ -155,9 +164,11 @@ def self_test():
     expect(lambda mm, cc: cc.update(status="QUALIFIED_CANDIDATE"), "requires candidate_sha")
     expect(lambda mm, cc: cc.update(status="PROMOTED", candidate_sha="s1", dataset_snapshot="d", readback={"deployed_sha": "s2", "observed_at": "t"}), "PROMOTED requires readback")
     expect(lambda mm, cc: (cc["arms"]["B"].update(jev_calls=0), cc.update(verdict="KEEP")), "contradicts the evidence")
+    expect(lambda mm, cc: cc.update(_illustrative="x"), "illustrative numbers")
+    expect(lambda mm, cc: cc.pop("isolated_vs_end_to_end"), "both isolated_agreement_B and end_to_end_agreement_C")
     small = mutated(lambda mm, cc: (cc.update(n_available=12, all_available_used=True), [a.update(n=12, critical_errors=0) for a in cc["arms"].values()]))
     assert small == [], small
-    print("self-test OK: 1 good packet passes, 15 mutations fail for the stated reason, thin-but-complete set accepted")
+    print("self-test OK: 1 good packet passes, 17 mutations fail for the stated reason, thin-but-complete set accepted")
     return 0
 
 
