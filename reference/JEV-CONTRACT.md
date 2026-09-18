@@ -1,7 +1,7 @@
 # The Jev contract, as documented on 2026-09-18
 
 Everything here was read from docs.typesafe.ai on 2026-09-18, except where a different
-source is named inline. Re-verify before quoting a number onward; the docs warn that limits
+source or date is named inline. Re-verify before quoting a number onward; the docs warn that limits
 change. Pin the model id in every swap plan and record it with every answer.
 
 ## Endpoint
