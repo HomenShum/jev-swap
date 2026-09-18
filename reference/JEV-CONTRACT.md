@@ -1,8 +1,8 @@
 # The Jev contract, as documented on 2026-09-18
 
-Everything here was read from docs.typesafe.ai on 2026-09-18. Re-verify before quoting a
-number onward; the docs warn that limits change. Pin the model id in every swap plan and
-record it with every answer.
+Everything here was read from docs.typesafe.ai on 2026-09-18, except where a different
+source is named inline. Re-verify before quoting a number onward; the docs warn that limits
+change. Pin the model id in every swap plan and record it with every answer.
 
 ## Endpoint
 
@@ -88,9 +88,10 @@ r.answers.category.choice;
 
 Many questions cost no extra latency in one request. Ask every question the workflow might
 need, including branch-specific ones, then let code decide which answers matter. Prefer one
-speculative request over a chain of dependent ones. The browser-use `jev-ultrafast` agent
-does exactly this: operation plus one target head per operation type in a single call, and a
-small LLM only writes text when the chosen operation is `TYPE_TEXT`.
+speculative request over a chain of dependent ones. Not from the TypeSafe docs: the
+browser-use `jev-ultrafast` agent (github.com/browser-use/jev-ultrafast, README as read
+2026-09-18) does exactly this: operation plus one target head per operation type in a single
+call, and a small LLM only writes text when the chosen operation is `TYPE_TEXT`.
 
 ## Jaggedness (jev-1.13, page reviewed 2026-09-17)
 

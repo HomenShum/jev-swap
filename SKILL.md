@@ -155,8 +155,12 @@ swap/<component>/
   verdict.md                judge's verdict, one next action, exact versions
 ```
 
-`python scripts/gate.py swap/<component>` enforces gates 1, 2, 5, 7 and 8 mechanically.
-A verdict written while the gate fails is a defect in the verdict, not in the gate.
+`python scripts/gate.py swap/<component>` enforces mechanically what a script can: gate 1,
+gate 2, the three-arms-wired half of gate 5 plus the presence of both comparison modes, the
+protected-files half of gate 7, and gate 8. It also refuses a card that still carries the
+template's illustrative numbers. Whether the judge re-ran instead of read is the judge's
+own record, not the script's. A verdict written while the gate fails is a defect in the
+verdict, not in the gate.
 
 ## Inside an agent harness
 
